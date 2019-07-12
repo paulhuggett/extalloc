@@ -92,18 +92,7 @@ namespace {
         }
     }
 
-} // end anonymous namespace
-
-int main () {
-    int exit_code = EXIT_SUCCESS;
-    try {
-        test_alloc_free_alloc ();
-        test_alloc_free_alloc_larger ();
-        free1 ();
-        free2 ();
-        free3 ();
-
-#if 1
+    void stress () {
         allocator alloc;
         std::mt19937 random;
 
@@ -124,8 +113,19 @@ int main () {
         alloc.dump (std::cout);
         assert (alloc.num_allocs () == 0);
         assert (alloc.num_frees () == 1);
-#endif
+    }
 
+} // end anonymous namespace
+
+int main () {
+    int exit_code = EXIT_SUCCESS;
+    try {
+        test_alloc_free_alloc ();
+        test_alloc_free_alloc_larger ();
+        free1 ();
+        free2 ();
+        free3 ();
+        stress ();
     } catch (std::exception const & ex) {
         std::cerr << "Error: " << ex.what () << '\n';
         exit_code = EXIT_FAILURE;
