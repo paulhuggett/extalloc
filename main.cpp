@@ -10,79 +10,6 @@
 
 namespace {
 
-    void test_alloc_free_alloc () {
-        allocator a;
-        auto p1 = a.allocate (16);
-        a.free (p1);
-        auto p2 = a.allocate (16);
-        a.free (p2);
-        assert (p1 == p2);
-        assert (a.num_allocs () == 0);
-        assert (a.num_frees () == 1);
-    }
-
-    void test_alloc_free_alloc_larger () {
-        allocator a;
-        auto p1 = a.allocate (16);
-        a.free (p1);
-        auto p2 = a.allocate (32);
-        a.free (p2);
-        assert (p1 != p2);
-        assert (a.num_allocs () == 0);
-        assert (a.num_frees () == 1);
-    }
-
-    void free1 () {
-        allocator a;
-        auto p1 = a.allocate (16);
-        assert (a.num_allocs () == 1);
-        assert (a.num_frees () == 0);
-        a.free (p1);
-        assert (a.num_allocs () == 0);
-        assert (a.num_frees () == 1);
-    }
-
-    void free2 () {
-        allocator a;
-        auto p1 = a.allocate (16);
-        auto p2 = a.allocate (16);
-        auto p3 = a.allocate (16);
-        assert (a.num_allocs () == 3);
-        assert (a.num_frees () == 0);
-        a.free (p2);
-        a.free (p3);
-        assert (a.num_allocs () == 1);
-        assert (a.num_frees () == 1);
-        a.free (p1);
-        assert (a.num_allocs () == 0);
-        assert (a.num_frees () == 1);
-    }
-
-    void free3 () {
-        allocator a;
-
-        auto p1 = a.allocate (16);
-        assert (a.num_allocs () == 1);
-        assert (a.num_frees () == 0);
-        auto p2 = a.allocate (16);
-        assert (a.num_allocs () == 2);
-        assert (a.num_frees () == 0);
-        auto p3 = a.allocate (16);
-        assert (a.num_allocs () == 3);
-        assert (a.num_frees () == 0);
-
-        a.free (p1);
-        assert (a.num_allocs () == 2);
-        assert (a.num_frees () == 1);
-        a.free (p3);
-        assert (a.num_allocs () == 1);
-        assert (a.num_frees () == 2);
-        a.free (p2);
-        assert (a.num_allocs () == 0);
-        assert (a.num_frees () == 1);
-    }
-
-
     void free_n (allocator & a, std::deque<allocator::address> & allocs, std::size_t n) {
         for (; n > 0; --n) {
             auto const pos = allocs.front ();
@@ -120,11 +47,6 @@ namespace {
 int main () {
     int exit_code = EXIT_SUCCESS;
     try {
-        test_alloc_free_alloc ();
-        test_alloc_free_alloc_larger ();
-        free1 ();
-        free2 ();
-        free3 ();
         stress ();
     } catch (std::exception const & ex) {
         std::cerr << "Error: " << ex.what () << '\n';
