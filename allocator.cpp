@@ -6,15 +6,6 @@
 #include <ostream>
 #include <stdexcept>
 
-// ctor
-// ~~~~
-allocator::allocator ()
-        : max_{} {}
-
-// dtor
-// ~~~~
-allocator::~allocator () = default;
-
 // allocate
 // ~~~~~~~~
 auto allocator::allocate (std::size_t size) -> address {
@@ -52,11 +43,15 @@ auto allocator::allocate (std::size_t size) -> address {
 // free
 // ~~~~
 void allocator::free (address offset) {
-    auto pos = allocs_.find (offset);
+    auto const pos = allocs_.find (offset);
     assert (frees_.find (offset) == std::end (frees_));
     if (pos == std::end (allocs_)) {
         throw std::runtime_error ("no allocation");
     }
+
+    constexpr auto allocation_end = [](decltype (frees_)::value_type const & p) noexcept {
+        return p.first + p.second;
+    };
 
     std::optional<decltype (frees_)::iterator> prev;
     std::optional<decltype (frees_)::iterator> next;
@@ -66,20 +61,19 @@ void allocator::free (address offset) {
     if (lb != std::begin (frees_)) {
         prev = lb;
         std::advance (*prev, -1);
+        if (offset != allocation_end (**prev)) {
+            prev.reset ();
+        }
     }
     if (lb != std::end (frees_)) {
-        assert (lb->first > pos->first);
-        next = lb;
+        assert (lb->first > offset);
+        if (allocation_end (*pos) == lb->first) {
+            next = lb;
+        }
     }
 
-    constexpr auto allocation_end = [](decltype (frees_)::value_type const & p) noexcept {
-        return p.first + p.second;
-    };
-
-    bool const merge_prev = prev && pos->first == allocation_end (**prev);
-    bool const merge_next = next && allocation_end (*pos) == (*next)->first;
-    if (merge_prev) {
-        if (merge_next) {
+    if (prev) {
+        if (next) {
             // We can merge with both the previous and subsequent free. This merges the 3 frees
             // into a single record.
             (*prev)->second += pos->second + (*next)->second;
@@ -88,7 +82,7 @@ void allocator::free (address offset) {
             // We can merge with the previous free. No new record is necessary.
             (*prev)->second += pos->second;
         }
-    } else if (merge_next) {
+    } else if (next) {
         // We can merge with the subsequent free. We create a record for this concatenated region
         // and release the original.
         frees_.insert ({pos->first, pos->second + (*next)->second});

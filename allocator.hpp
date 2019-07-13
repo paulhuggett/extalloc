@@ -11,15 +11,6 @@ class allocator {
 public:
     using address = std::uint8_t *;
 
-    allocator ();
-    allocator (allocator const & ) = delete;
-    allocator (allocator && ) = delete;
-
-    ~allocator ();
-
-    allocator & operator= (allocator const & ) = delete;
-    allocator & operator= (allocator && ) = delete;
-
     [[nodiscard]] address allocate (std::size_t size);
     void free (address offset);
 
@@ -28,7 +19,7 @@ public:
     [[nodiscard]] std::size_t num_frees () const noexcept { return frees_.size (); }
 
 private:
-    address max_;
+    address max_ = nullptr;
     std::map<address, std::size_t> allocs_;
     std::map<address, std::size_t> frees_;
 };
