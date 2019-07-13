@@ -20,7 +20,7 @@ auto allocator::allocate (std::size_t size) -> address {
         auto const end = std::end (frees_);
         auto const pos = std::find_if (
             std::begin (frees_), end,
-            [size](decltype (frees_)::value_type const & vt) { return vt.second >= size; });
+            [size](container::value_type const & vt) { return vt.second >= size; });
         if (pos == end) {
             // No free space large enough: allocate more.
             result = max_;
@@ -49,12 +49,12 @@ void allocator::free (address offset) {
         throw std::runtime_error ("no allocation");
     }
 
-    constexpr auto allocation_end = [](decltype (frees_)::value_type const & p) noexcept {
+    constexpr auto allocation_end = [](container::value_type const & p) noexcept {
         return p.first + p.second;
     };
 
-    std::optional<decltype (frees_)::iterator> prev;
-    std::optional<decltype (frees_)::iterator> next;
+    std::optional<container::iterator> prev;
+    std::optional<container::iterator> next;
 
     // lower_bound() returns an iterator pointing to the first element that's not less than offset.
     auto lb = frees_.lower_bound (offset);

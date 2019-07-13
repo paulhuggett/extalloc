@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <iosfwd>
 #include <map>
-#include <utility>
 
 class allocator {
 public:
@@ -20,8 +19,10 @@ public:
 
 private:
     address max_ = nullptr;
-    std::map<address, std::size_t> allocs_;
-    std::map<address, std::size_t> frees_;
+    // A ordered key/value container.
+    using container = std::map<address, std::size_t>;
+    container allocs_;
+    container frees_;
 };
 
 #endif // ALLOCATOR_HPP
