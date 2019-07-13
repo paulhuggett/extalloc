@@ -3,40 +3,36 @@
 #include <cstdlib>
 #include <deque>
 #include <iostream>
-#include <optional>
 #include <random>
 
 #include "allocator.hpp"
 
 namespace {
 
-    void free_n (allocator & a, std::deque<allocator::address> & allocs, std::size_t n) {
-        for (; n > 0; --n) {
-            auto const pos = allocs.front ();
-            allocs.pop_front ();
-
-            a.free (pos);
-        }
-    }
-
-    void stress () {
+    void stress (unsigned num_passes, unsigned num_allocations, unsigned max_allocation_size) {
         allocator alloc;
+        std::deque<allocator::address> blocks;
+
+        auto const free_n = [&](std::size_t n) {
+            for (; n > 0; --n) {
+                auto const pos = blocks.front ();
+                blocks.pop_front ();
+
+                alloc.free (pos);
+            }
+        };
+
         std::mt19937 random;
 
-        constexpr auto num_passes = 2000U;
-        constexpr auto num_allocations = 2000U;
-        constexpr auto max_allocation_size = 256U;
-
-        std::deque<allocator::address> blocks;
-        for (auto pass = 0U; pass < num_passes; ++pass) {
+        for (; num_passes > 0; --num_passes) {
             while (blocks.size () < num_allocations) {
                 blocks.push_back (alloc.allocate (random () % max_allocation_size));
             }
             std::shuffle (blocks.begin (), blocks.end (), random);
-            free_n (alloc, blocks, random () % num_allocations);
+            free_n (random () % blocks.size ());
         }
 
-        free_n (alloc, blocks, blocks.size ());
+        free_n (blocks.size ());
         alloc.dump (std::cout);
         assert (alloc.num_allocs () == 0);
         assert (alloc.num_frees () == 1);
@@ -47,7 +43,11 @@ namespace {
 int main () {
     int exit_code = EXIT_SUCCESS;
     try {
-        stress ();
+        constexpr auto num_passes = 2000U;
+        constexpr auto num_allocations = 2000U;
+        constexpr auto max_allocation_size = 256U;
+
+        stress (num_passes, num_allocations, max_allocation_size);
     } catch (std::exception const & ex) {
         std::cerr << "Error: " << ex.what () << '\n';
         exit_code = EXIT_FAILURE;
