@@ -7,6 +7,12 @@ TEST (Allocator, InitialState) {
     EXPECT_EQ (a.num_frees (), 0U);
 }
 
+TEST (Allocator, BadFree) {
+    allocator a;
+    auto v = std::uint8_t{0};
+    EXPECT_THROW (a.free (&v), std::runtime_error);
+}
+
 TEST (Allocator, SimpleAllocateThenFree) {
     allocator a;
     auto p1 = a.allocate (16);
