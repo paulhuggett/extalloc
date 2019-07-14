@@ -13,7 +13,12 @@ function (configure_target name)
     elseif (CMAKE_COMPILER_IS_GNUCXX)
         target_compile_options (${name} PRIVATE -Wall -pedantic)
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_compile_options (${name} PRIVATE -Weverything -Wno-c++98-compat)
+        target_compile_options (${name} PRIVATE
+            -Weverything
+            -Wno-c++98-compat
+            -Wno-c++98-compat-pedantic
+            -Wno-padded
+        )
     else ()
         message (STATUS "Unknown compiler")
     endif ()

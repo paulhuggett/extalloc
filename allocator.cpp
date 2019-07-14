@@ -6,6 +6,11 @@
 #include <ostream>
 #include <stdexcept>
 
+// ctor
+// ~~~~
+allocator::allocator (add_storage_fn as)
+        : add_storage_{as} {}
+
 // allocate
 // ~~~~~~~~
 auto allocator::allocate (std::size_t size) -> address {
@@ -14,28 +19,29 @@ auto allocator::allocate (std::size_t size) -> address {
 
     if (frees_.empty ()) {
         // No free space at all: allocate more.
-        result = max_;
-        max_ += size;
-    } else {
-        auto const end = std::end (frees_);
-        auto const pos = std::find_if (
-            std::begin (frees_), end,
-            [size](container::value_type const & vt) { return vt.second >= size; });
-        if (pos == end) {
-            // No free space large enough: allocate more.
-            result = max_;
-            max_ += size;
-        } else {
-            // There's a free block with sufficient space.
-            result = pos->first;
-            assert (pos->second >= size);
-            auto new_size = pos->second - size;
-            if (pos->second > size) {
-                frees_.insert ({result + size, new_size});
-            }
-            frees_.erase (pos);
-        }
+        frees_.insert (add_storage_ (size));
     }
+
+    auto const end = std::end (frees_);
+    auto pos = std::find_if (std::begin (frees_), end, [size](container::value_type const & vt) {
+        return vt.second >= size;
+    });
+    if (pos == end) {
+        // No free space large enough: allocate more.
+        bool inserted = false;
+        std::tie (pos, inserted) = frees_.insert (add_storage_ (size));
+    }
+
+    // There's a free block with sufficient space.
+    result = pos->first;
+
+    // Split this block?
+    assert (pos->second >= size);
+    if (pos->second > size) {
+        frees_.insert ({result + size, pos->second - size});
+    }
+    frees_.erase (pos);
+
     allocs_.insert ({result, size});
     return result;
 }
