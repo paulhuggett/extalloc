@@ -94,7 +94,7 @@ auto allocator::allocate (std::size_t size) -> address {
 
         // We must move the block somewhere else to satisfy the allocation request/
         auto new_ptr = this->allocate (new_size);
-        std::memcpy (new_ptr, ptr, pos->second);
+        std::copy (ptr, ptr + pos->second, new_ptr);
         this->free (pos->first);
         return new_ptr;
     }
