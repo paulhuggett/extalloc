@@ -26,6 +26,7 @@ public:
     void free (address offset);
     [[nodiscard]] address realloc (address ptr, std::size_t new_size);
 
+    bool check () const;
     void dump (std::ostream & os);
     [[nodiscard]] std::size_t num_allocs () const noexcept { return allocs_.size (); }
     [[nodiscard]] std::size_t num_frees () const noexcept { return frees_.size (); }
@@ -39,6 +40,7 @@ private:
     static address allocation_end (container::value_type const & p) noexcept {
         return p.first + p.second;
     }
+
 
     container allocs_;
     container frees_;

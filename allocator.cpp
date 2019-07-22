@@ -64,6 +64,8 @@ auto allocator::allocate (std::size_t size) -> address {
 // realloc
 // ~~~~~~~
 [[nodiscard]] auto allocator::realloc (address ptr, std::size_t new_size) -> address {
+    new_size = std::max (new_size, std::size_t{1});
+
     auto const pos = allocs_.find (ptr);
     assert (frees_.find (ptr) == std::end (frees_));
     if (pos == std::end (allocs_)) {
@@ -76,7 +78,7 @@ auto allocator::allocate (std::size_t size) -> address {
     }
 
     auto const end_address = allocation_end (*pos);
-    auto lb = frees_.lower_bound (end_address);
+    auto const lb = frees_.lower_bound (end_address);
 
     if (new_size > pos->second) {
         // We're being asked to enlarge the allocation. Is there sufficient free space immediately
@@ -86,7 +88,7 @@ auto allocator::allocate (std::size_t size) -> address {
             auto const f = *lb;
             frees_.erase (lb);
             if (f.second > extra) {
-                frees_.insert ({end_address, f.second - extra});
+                frees_.insert ({end_address + extra, f.second - extra});
             }
             pos->second = new_size;
             return ptr;
@@ -104,14 +106,18 @@ auto allocator::allocate (std::size_t size) -> address {
     if (lb != std::end (frees_) && lb->first == end_address) {
         // There's a free block immediately following. Move its start to coincide with the space
         // being released.
-        auto const reduction = pos->second - new_size;
-        auto const f = *lb;
+        auto const f = std::make_pair (lb->first - reduction, lb->second + reduction);
+        assert (allocation_end (f) == allocation_end (*lb));
         frees_.erase (lb);
-        frees_.insert ({f.first - reduction, f.second + reduction});
+        frees_.insert (f);
+
+        // Adjust the allocation size.
+        pos->second = new_size;
         return ptr;
     }
 
-    frees_.insert ({end_address, reduction});
+    frees_.insert ({ptr + new_size, reduction});
+    pos->second = new_size;
     return ptr;
 }
 
@@ -177,4 +183,30 @@ void allocator::dump (std::ostream & os) {
     std::for_each (std::begin (allocs_), std::end (allocs_), emit);
     os << "Frees:\n";
     std::for_each (std::begin (frees_), std::end (frees_), emit);
+}
+
+// check
+// ~~~~~
+bool allocator::check () const {
+    container map = allocs_;
+    for (auto const & m : frees_) {
+        if (map.find (m.first) != map.end ()) {
+            return false;
+        }
+        map[m.first] = m.second;
+    }
+
+    if (!map.empty ()) {
+        auto it = map.begin ();
+        auto end = map.end ();
+        auto addr = it->first + it->second;
+        ++it;
+        for (; it != end; ++it) {
+            if (it->first < addr) {
+                return false;
+            }
+            addr = it->first + it->second;
+        }
+    }
+    return true;
 }

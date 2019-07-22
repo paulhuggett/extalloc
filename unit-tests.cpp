@@ -37,18 +37,28 @@ TEST_F (Allocator, BadFree) {
 
 TEST_F (Allocator, SimpleAllocateThenFree) {
     auto p1 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
     EXPECT_EQ (alloc_.num_allocs (), 1U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
     alloc_.free (p1);
+    ASSERT_TRUE (alloc_.check ());
     EXPECT_EQ (alloc_.num_allocs (), 0U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
 }
 
 TEST_F (Allocator, AllocFreeAlloc) {
     auto p1 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     alloc_.free (p1);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p2 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     alloc_.free (p2);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (p1, p2);
     EXPECT_EQ (alloc_.num_allocs (), 0U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
@@ -56,9 +66,17 @@ TEST_F (Allocator, AllocFreeAlloc) {
 
 TEST_F (Allocator, AllocFreeAllocLarger) {
     auto p1 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     alloc_.free (p1);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p2 = alloc_.allocate (32);
+    ASSERT_TRUE (alloc_.check ());
+
     alloc_.free (p2);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (p1, p2);
     EXPECT_EQ (alloc_.num_allocs (), 0U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
@@ -66,84 +84,151 @@ TEST_F (Allocator, AllocFreeAllocLarger) {
 
 TEST_F (Allocator, SplitFreeSpace) {
     auto p1 = alloc_.allocate (32);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p2 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     alloc_.free (p1);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p3 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (p3, p1);
     EXPECT_EQ (alloc_.num_allocs (), 2U);
     EXPECT_EQ (alloc_.num_frees (), 2U);
+
     alloc_.free (p2);
+    ASSERT_TRUE (alloc_.check ());
+
     alloc_.free (p3);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 0U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
 }
 
 TEST_F (Allocator, Free2) {
     auto p1 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p2 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p3 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 3U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
+
     alloc_.free (p2);
+    ASSERT_TRUE (alloc_.check ());
+
     alloc_.free (p3);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 1U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
+
     alloc_.free (p1);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 0U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
 }
 
 TEST_F (Allocator, FreeInReverseOrder) {
     auto p1 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p2 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p3 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
 
     alloc_.free (p3);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 2U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
 
     alloc_.free (p2);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 1U);
+    ASSERT_TRUE (alloc_.check ());
     EXPECT_EQ (alloc_.num_frees (), 1U);
 
     alloc_.free (p1);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 0U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
 }
 
 TEST_F (Allocator, FreeInForwardOrder) {
     auto p1 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 1U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
+
     auto p2 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 2U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
+
     auto p3 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 3U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
 
     alloc_.free (p1);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 2U);
     EXPECT_EQ (alloc_.num_frees (), 2U);
+
     alloc_.free (p3);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 1U);
     EXPECT_EQ (alloc_.num_frees (), 2U);
+
     alloc_.free (p2);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (alloc_.num_allocs (), 0U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
 }
 
 TEST_F (Allocator, GrowStorageTwice) {
     auto p1 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p2 = alloc_.allocate (buffer_size);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (buffers_.size (), 2U);
+
     alloc_.free (p1);
+    ASSERT_TRUE (alloc_.check ());
+
     alloc_.free (p2);
+    ASSERT_TRUE (alloc_.check ());
 }
 
 TEST_F (Allocator, ReallocSameSize) {
     auto p1 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p2 = alloc_.realloc (p1, 16);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (p1, p2);
     EXPECT_EQ (alloc_.num_allocs (), 1U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
@@ -151,7 +236,11 @@ TEST_F (Allocator, ReallocSameSize) {
 
 TEST_F (Allocator, ReallocSmallerNoFollowingFreeSpace) {
     auto p1 = alloc_.allocate (buffer_size);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p2 = alloc_.realloc (p1, 8);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (p1, p2);
     EXPECT_EQ (alloc_.num_allocs (), 1U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
@@ -159,9 +248,17 @@ TEST_F (Allocator, ReallocSmallerNoFollowingFreeSpace) {
 
 TEST_F (Allocator, ReallocSmallerWithFollowingFreeSpace) {
     auto p1 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p2 = alloc_.allocate (16);
+    ASSERT_TRUE (alloc_.check ());
+
     alloc_.free (p2);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p3 = alloc_.realloc (p1, 8);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (p1, p3);
     EXPECT_EQ (alloc_.num_allocs (), 1U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
@@ -169,7 +266,11 @@ TEST_F (Allocator, ReallocSmallerWithFollowingFreeSpace) {
 
 TEST_F (Allocator, ReallocLargerWithFollowingFreeSpace) {
     auto p1 = alloc_.allocate (8);
+    ASSERT_TRUE (alloc_.check ());
+
     auto p2 = alloc_.realloc (p1, 16);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_EQ (p1, p2);
     EXPECT_EQ (alloc_.num_allocs (), 1U);
     EXPECT_EQ (alloc_.num_frees (), 1U);
@@ -178,7 +279,11 @@ TEST_F (Allocator, ReallocLargerWithFollowingFreeSpace) {
 TEST_F (Allocator, ReallocLargerWithoutFollowingFreeSpace) {
     auto p1 = alloc_.allocate (8);
     auto p2 = alloc_.allocate (8);
+
+    ASSERT_TRUE (alloc_.check ());
     auto p3 = alloc_.realloc (p1, 16);
+    ASSERT_TRUE (alloc_.check ());
+
     EXPECT_NE (p1, p2);
     EXPECT_NE (p1, p3);
     EXPECT_EQ (alloc_.num_allocs (), 2U);

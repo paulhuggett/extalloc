@@ -39,6 +39,7 @@ namespace {
                 }
 
                 alloc.free (addr);
+                assert (alloc.check ());
 
                 blocks.pop_front ();
             }
@@ -46,10 +47,13 @@ namespace {
 
         std::mt19937 random;
 
-        for (; num_passes > 0; --num_passes) {
+        std::cout << "Allocate checks: ";
+        for (unsigned pass = 0; pass < num_passes; ++pass) {
+            std::cout << '.' << std::flush;
             while (blocks.size () < num_allocations) {
                 auto const size = random () % max_allocation_size;
                 auto const ptr = alloc.allocate (size);
+                assert (alloc.check ());
                 auto const value = static_cast<std::uint8_t> (random () % 0xFF);
                 std::fill_n (ptr, size, value);
                 blocks.push_back (std::make_tuple (ptr, size, value));
@@ -57,8 +61,31 @@ namespace {
             std::shuffle (blocks.begin (), blocks.end (), random);
             free_n (random () % blocks.size ());
         }
+        std::cout << std::endl << "Realloc checks: ";
+
+        // Now the same again but doing a realloc on the block immediately after it has been
+        // allocated.
+        for (unsigned pass = 0; pass < num_passes; ++pass) {
+            std::cout << '.' << std::flush;
+            while (blocks.size () < num_allocations) {
+                auto const ptr = alloc.allocate (random () % max_allocation_size);
+                assert (alloc.check ());
+
+                auto const size = random () % max_allocation_size;
+                auto const ptr2 = alloc.realloc (ptr, size);
+                assert (alloc.check ());
+
+                auto const value = static_cast<std::uint8_t> (random () % 0xFF);
+                std::fill_n (ptr2, size, value);
+                blocks.push_back (std::make_tuple (ptr2, size, value));
+            }
+            std::shuffle (blocks.begin (), blocks.end (), random);
+            free_n (random () % blocks.size ());
+        }
+        std::cout << std::endl;
 
         free_n (blocks.size ());
+
         alloc.dump (std::cout);
         assert (alloc.num_allocs () == 0);
     }
@@ -68,7 +95,7 @@ namespace {
 int main () {
     int exit_code = EXIT_SUCCESS;
     try {
-        constexpr auto num_passes = 2000U;
+        constexpr auto num_passes = 16U;
         constexpr auto num_allocations = 2000U;
         constexpr auto max_allocation_size = std::size_t{256};
         constexpr auto storage_block_size = std::size_t{32768};
