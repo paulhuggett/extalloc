@@ -6,6 +6,21 @@
 #include <ostream>
 #include <stdexcept>
 
+
+//*                  _ _              _   _           *
+//*  _ _  ___   __ _| | |___  __ __ _| |_(_)___ _ _   *
+//* | ' \/ _ \ / _` | | / _ \/ _/ _` |  _| / _ \ ' \  *
+//* |_||_\___/ \__,_|_|_\___/\__\__,_|\__|_\___/_||_| *
+//*                                                   *
+no_allocation::no_allocation ()
+        : std::runtime_error ("no allocation") {}
+no_allocation::~no_allocation () noexcept = default;
+
+//*       _ _              _            *
+//*  __ _| | |___  __ __ _| |_ ___ _ _  *
+//* / _` | | / _ \/ _/ _` |  _/ _ \ '_| *
+//* \__,_|_|_\___/\__\__,_|\__\___/_|   *
+//*                                     *
 // ctor
 // ~~~~
 allocator::allocator (add_storage_fn as)
@@ -46,18 +61,68 @@ auto allocator::allocate (std::size_t size) -> address {
     return result;
 }
 
+// realloc
+// ~~~~~~~
+[[nodiscard]] auto allocator::realloc (address ptr, std::size_t new_size) -> address {
+    auto const pos = allocs_.find (ptr);
+    assert (frees_.find (ptr) == std::end (frees_));
+    if (pos == std::end (allocs_)) {
+        throw no_allocation ();
+    }
+
+    if (new_size == pos->second) {
+        // no change in size: just return the original pointer.
+        return ptr;
+    }
+
+    auto const end_address = allocation_end (*pos);
+    auto lb = frees_.lower_bound (end_address);
+
+    if (new_size > pos->second) {
+        // We're being asked to enlarge the allocation. Is there sufficient free space immediately
+        // following?
+        auto const extra = new_size - pos->second;
+        if (lb != std::end (frees_) && lb->first == end_address && lb->second >= extra) {
+            auto const f = *lb;
+            frees_.erase (lb);
+            if (f.second > extra) {
+                frees_.insert ({end_address, f.second - extra});
+            }
+            pos->second = new_size;
+            return ptr;
+        }
+
+        // We must move the block somewhere else to satisfy the allocation request/
+        auto new_ptr = this->allocate (new_size);
+        std::memcpy (new_ptr, ptr, pos->second);
+        this->free (pos->first);
+        return new_ptr;
+    }
+
+    assert (new_size < pos->second);
+    auto const reduction = pos->second - new_size;
+    if (lb != std::end (frees_) && lb->first == end_address) {
+        // There's a free block immediately following. Move its start to coincide with the space
+        // being released.
+        auto const reduction = pos->second - new_size;
+        auto const f = *lb;
+        frees_.erase (lb);
+        frees_.insert ({f.first - reduction, f.second + reduction});
+        return ptr;
+    }
+
+    frees_.insert ({end_address, reduction});
+    return ptr;
+}
+
 // free
 // ~~~~
 void allocator::free (address offset) {
     auto const pos = allocs_.find (offset);
     assert (frees_.find (offset) == std::end (frees_));
     if (pos == std::end (allocs_)) {
-        throw std::runtime_error ("no allocation");
+        throw no_allocation ();
     }
-
-    constexpr auto allocation_end = [](container::value_type const & p) noexcept {
-        return p.first + p.second;
-    };
 
     std::optional<container::iterator> prev;
     std::optional<container::iterator> next;
