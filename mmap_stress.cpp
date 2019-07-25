@@ -101,7 +101,7 @@ namespace {
                 assert (alloc->check ());
                 auto const value = static_cast<std::uint8_t> ((random () % 26) + 'a');
                 std::fill_n (ptr, size, value);
-                blocks[ptr] = std::make_tuple (size, value);
+                blocks[ptr] = std::make_pair (size, value);
             }
 
             free_n (random, &blocks, alloc);
@@ -132,7 +132,7 @@ namespace {
 
                 auto const value = static_cast<std::uint8_t> ((random () % 26) + 'a');
                 std::fill_n (ptr2, size, value);
-                blocks[ptr2] = std::make_tuple (size, value);
+                blocks[ptr2] = std::make_pair (size, value);
             }
 
             if (blocks.size () > 0) {
@@ -191,7 +191,7 @@ namespace {
             auto const v1 = read<std::ptrdiff_t> (is) + base;
             auto const v2 = read<std::tuple_element<0, value_type>::type> (is);
             auto const v3 = read<std::tuple_element<1, value_type>::type> (is);
-            map[v1] = std::make_tuple (v2, v3);
+            map[v1] = std::make_pair (v2, v3);
         }
         return map;
     }
