@@ -2,9 +2,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <numeric>
 #include <optional>
-#include <ostream>
-#include <stdexcept>
+#include <type_traits>
 
 
 //*                  _ _              _   _           *
@@ -23,8 +23,13 @@ no_allocation::~no_allocation () noexcept = default;
 //*                                     *
 // ctor
 // ~~~~
-allocator::allocator (add_storage_fn as)
-        : add_storage_{as} {}
+allocator::allocator (address initial_ptr, std::size_t initial_size, add_storage_fn as)
+        : add_storage_{as} {
+
+    if (initial_ptr != nullptr && initial_size > 0) {
+        frees_.emplace (initial_ptr, initial_size);
+    }
+}
 
 // allocate
 // ~~~~~~~~
@@ -73,7 +78,7 @@ auto allocator::allocate (std::size_t size) -> address {
     }
 
     if (new_size == pos->second) {
-        // no change in size: just return the original pointer.
+        // No change in size: just return the original pointer.
         return ptr;
     }
 
@@ -94,7 +99,7 @@ auto allocator::allocate (std::size_t size) -> address {
             return ptr;
         }
 
-        // We must move the block somewhere else to satisfy the allocation request/
+        // We must move the block somewhere else to satisfy the allocation request.
         auto new_ptr = this->allocate (new_size);
         std::copy (ptr, ptr + pos->second, new_ptr);
         this->free (pos->first);
@@ -110,13 +115,11 @@ auto allocator::allocate (std::size_t size) -> address {
         assert (allocation_end (f) == allocation_end (*lb));
         frees_.erase (lb);
         frees_.insert (f);
-
-        // Adjust the allocation size.
-        pos->second = new_size;
-        return ptr;
+    } else {
+        // There's no following free space, so just create some.
+        frees_.insert ({ptr + new_size, reduction});
     }
-
-    frees_.insert ({ptr + new_size, reduction});
+    // Adjust the allocation size.
     pos->second = new_size;
     return ptr;
 }
@@ -172,17 +175,46 @@ void allocator::free (address offset) {
     allocs_.erase (pos);
 }
 
+
 // dump
 // ~~~~
 void allocator::dump (std::ostream & os) {
-    auto const emit = [&os](std::pair<address, std::size_t> const & v) {
-        auto const first = reinterpret_cast<std::uintptr_t> (v.first);
-        os << "  [" << first << ',' << first + v.second << ")\n";
+    auto merge = [](memory_map && m, container const & c, bool is_used) -> memory_map {
+        memory_map result = std::move (m);
+        for (auto const & kvp : c) {
+            result[kvp.first] = std::make_tuple (kvp.second, is_used);
+        }
+        return result;
     };
-    os << "Allocations:\n";
-    std::for_each (std::begin (allocs_), std::end (allocs_), emit);
-    os << "Frees:\n";
-    std::for_each (std::begin (frees_), std::end (frees_), emit);
+
+    memory_map const map = merge (merge (memory_map{}, allocs_, true), frees_, false);
+    os << std::boolalpha;
+    auto const emit = [&os](std::pair<address, std::tuple<std::size_t, bool>> const & v) {
+        auto const first = reinterpret_cast<std::uintptr_t> (v.first);
+        os << first << ',' << std::get<0> (v.second) << ',' << std::get<1> (v.second) << '\n';
+    };
+    std::for_each (std::begin (map), std::end (map), emit);
+}
+
+// accumulate_values [static]
+// ~~~~~~~~~~~~~~~~~
+template <typename Container>
+std::size_t allocator::accumulate_values (Container const & c) {
+    return std::accumulate (
+        std::begin (c), std::end (c), std::size_t{0},
+        [](std::size_t s, typename Container::value_type const & v) { return s + v.second; });
+}
+
+// allocated_space
+// ~~~~~~~~~~~~~~~
+std::size_t allocator::allocated_space () const noexcept {
+    return allocator::accumulate_values (allocs_);
+}
+
+// free_space
+// ~~~~~~~~~~
+std::size_t allocator::free_space () const noexcept {
+    return allocator::accumulate_values (frees_);
 }
 
 // check
@@ -209,4 +241,36 @@ bool allocator::check () const {
         }
     }
     return true;
+}
+
+// save
+// ~~~~
+std::ostream & allocator::save (std::ostream & os, std::uint8_t const * base) {
+    auto const write_map = [&os, base](container const & map) {
+        write (os, map.size ());
+        for (auto const & kvp : map) {
+            write (os, kvp.first - base);
+            write (os, kvp.second);
+        }
+    };
+    write_map (allocs_);
+    write_map (frees_);
+    return os;
+}
+
+// load
+// ~~~~
+void allocator::load (std::istream & is, std::uint8_t * base) {
+    auto const read_map = [&is, base]() {
+        container map;
+        auto size = read<std::size_t> (is);
+        for (; size > 0; --size) {
+            auto const k = read<std::ptrdiff_t> (is) + base;
+            auto const v = read<container::value_type::second_type> (is);
+            map.emplace (k, v);
+        }
+        return map;
+    };
+    allocs_ = read_map ();
+    frees_ = read_map ();
 }

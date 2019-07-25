@@ -78,3 +78,12 @@ add_custom_command (
     BYPRODUCTS "${out_xml}"
     VERBATIM
 )
+
+
+###############
+# mmap_stress #
+###############
+
+add_executable (mmap_stress mmap_stress.cpp)
+configure_target (mmap_stress)
+target_link_libraries (mmap_stress PRIVATE extalloc)

@@ -17,10 +17,10 @@ namespace {
     };
 
     Allocator::Allocator ()
-            : alloc_{[this](std::size_t size) {
-                auto & buffer = buffers_.emplace_back (std::max (size, buffer_size));
-                return std::pair<uint8_t *, size_t>{buffer.data (), buffer.size ()};
-            }} {}
+            : alloc_{nullptr, 0U, [this](std::size_t size) {
+                         auto & buffer = buffers_.emplace_back (std::max (size, buffer_size));
+                         return std::pair<uint8_t *, size_t>{buffer.data (), buffer.size ()};
+                     }} {}
 
 } // end anonymous namespace
 

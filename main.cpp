@@ -21,10 +21,11 @@ namespace {
                  std::size_t storage_block_size) {
         std::list<std::vector<std::uint8_t>> buffers;
 
-        allocator alloc{[&buffers, storage_block_size](std::size_t size) {
-            auto & buffer = buffers.emplace_back (std::max (size, storage_block_size));
-            return std::pair<uint8_t *, size_t>{buffer.data (), buffer.size ()};
-        }};
+        allocator alloc{nullptr, std::size_t{0}, [&buffers, storage_block_size](std::size_t size) {
+                            auto & buffer =
+                                buffers.emplace_back (std::max (size, storage_block_size));
+                            return std::pair<uint8_t *, size_t>{buffer.data (), buffer.size ()};
+                        }};
 
         std::deque<std::tuple<allocator::address, std::size_t, std::uint8_t>> blocks;
 
