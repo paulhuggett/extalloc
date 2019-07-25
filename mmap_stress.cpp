@@ -16,6 +16,18 @@
 
 namespace {
 
+    constexpr auto alloc_persist = "./map.alloc";
+    constexpr auto store_persist = "./store.alloc";
+    constexpr auto blocks_persist = "./blocks.alloc";
+
+    constexpr auto mapped_size = std::size_t{1024} * std::size_t{1024};
+
+    constexpr auto num_passes = 16U;
+    constexpr auto max_allocation_size = std::size_t{256};
+    constexpr auto num_allocations = mapped_size / max_allocation_size;
+
+
+
     class bad_memory : public std::runtime_error {
     public:
         explicit bad_memory ()
@@ -37,19 +49,18 @@ namespace {
             return false;
         }
 
-        auto const pred1 = [](blocks_type::value_type const & v1,
-                              allocator::container::value_type const & v2) {
-            return v1.first == v2.first;
-        };
-        if (!std::equal (std::begin (blocks), std::end (blocks), alloc.allocs_begin (), pred1)) {
+        if (!std::equal (
+                std::begin (blocks), std::end (blocks), alloc.allocs_begin (),
+                [](blocks_type::value_type const & v1,
+                   allocator::container::value_type const & v2) { return v1.first == v2.first; })) {
             return false;
         }
 
-        auto const pred2 = [](blocks_type::value_type const & v1,
-                              allocator::container::value_type const & v2) {
-            return std::get<0> (v1.second) <= v2.second;
-        };
-        if (!std::equal (std::begin (blocks), std::end (blocks), alloc.allocs_begin (), pred2)) {
+        if (!std::equal (std::begin (blocks), std::end (blocks), alloc.allocs_begin (),
+                         [](blocks_type::value_type const & v1,
+                            allocator::container::value_type const & v2) {
+                             return std::get<0> (v1.second) <= v2.second;
+                         })) {
             return false;
         }
         if (!std::all_of (std::begin (blocks), std::end (blocks), block_content_okay)) {
@@ -68,7 +79,9 @@ namespace {
             auto pos = blocks->begin ();
             std::advance (pos, random () % blocks->size ());
 
-            assert (blocks_okay (*blocks, *alloc));
+            if (!blocks_okay (*blocks, *alloc)) {
+                throw bad_memory ();
+            }
 
             auto const addr = pos->first;
             auto const end = addr + std::get<0> (pos->second);
@@ -81,7 +94,9 @@ namespace {
             assert (alloc->check ());
 
             blocks->erase (pos);
-            assert (blocks_okay (*blocks, *alloc));
+            if (!blocks_okay (*blocks, *alloc)) {
+                throw bad_memory ();
+            }
         }
     }
 
@@ -94,11 +109,14 @@ namespace {
             std::cout << '.' << std::flush;
 
             while (alloc->num_allocs () < num_allocations) {
-                assert (blocks_okay (blocks, *alloc));
+                if (!blocks_okay (blocks, *alloc)) {
+                    throw bad_memory ();
+                }
 
                 auto const size = random () % max_allocation_size;
                 auto const ptr = alloc->allocate (size);
                 assert (alloc->check ());
+
                 auto const value = static_cast<std::uint8_t> ((random () % 26) + 'a');
                 std::fill_n (ptr, size, value);
                 blocks[ptr] = std::make_pair (size, value);
@@ -121,7 +139,9 @@ namespace {
             std::cout << '.' << std::flush;
 
             while (alloc->num_allocs () < num_allocations) {
-                assert (blocks_okay (blocks, *alloc));
+                if (!blocks_okay (blocks, *alloc)) {
+                    throw bad_memory ();
+                }
 
                 auto const ptr = alloc->allocate (random () % max_allocation_size);
                 assert (alloc->check ());
@@ -177,12 +197,6 @@ namespace {
 
 
 
-    constexpr auto alloc_persist = "./map.alloc";
-    constexpr auto store_persist = "./store.alloc";
-    constexpr auto blocks_persist = "./blocks.alloc";
-
-    constexpr auto mapped_size = std::size_t{1024} * std::size_t{1024};
-
     blocks_type load_blocks (std::istream & is, std::uint8_t * base) {
         blocks_type map;
         auto size = read<std::size_t> (is);
@@ -205,8 +219,7 @@ namespace {
         }
     }
 
-
-    void stress (unsigned num_passes, unsigned num_allocations, std::size_t max_allocation_size) {
+    void mmap_stress () {
         int fd = open (store_persist, O_RDWR | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
         if (fd == -1) {
             throw std::error_code (errno, std::system_category ());
@@ -230,7 +243,9 @@ namespace {
         if (file_is_available (blocks_persist)) {
             std::ifstream file (blocks_persist, std::ios::binary);
             blocks = load_blocks (file, backing_ptr.get ());
-            assert (blocks_okay (blocks, alloc));
+            if (!blocks_okay (blocks, alloc)) {
+                throw bad_memory ();
+            }
         }
 
         std::cout << "On start: " << alloc.allocated_space () << " allocated bytes ("
@@ -242,6 +257,7 @@ namespace {
         allocate_test (num_passes, num_allocations, max_allocation_size, random, blocks, &alloc);
         realloc_test (num_passes, num_allocations, max_allocation_size, random, blocks, &alloc);
 
+        // Free some of our allocations.
         if (alloc.num_allocs () > 0) {
             for (auto ctr = random () % alloc.num_allocs (); ctr > 0U; --ctr) {
                 auto pos = alloc.allocs_begin ();
@@ -249,6 +265,10 @@ namespace {
                 auto const addr = pos->first;
                 alloc.free (addr);
                 blocks.erase (addr);
+            }
+
+            if (!blocks_okay (blocks, alloc)) {
+                throw bad_memory ();
             }
         }
 
@@ -267,11 +287,7 @@ namespace {
 int main () {
     int exit_code = EXIT_SUCCESS;
     try {
-        constexpr auto num_passes = 16U;
-        constexpr auto max_allocation_size = std::size_t{256};
-        constexpr auto num_allocations = mapped_size / max_allocation_size;
-
-        stress (num_passes, num_allocations, max_allocation_size);
+        mmap_stress ();
     } catch (std::exception const & ex) {
         std::cerr << "Error: " << ex.what () << '\n';
         exit_code = EXIT_FAILURE;
