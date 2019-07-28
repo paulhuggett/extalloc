@@ -8,6 +8,7 @@
 #include <ostream>
 #include <map>
 #include <stdexcept>
+#include <utility>
 
 template <typename T, typename = typename std::enable_if<std::is_standard_layout<T>::value>::type>
 inline void write (std::ostream & os, T const & t) {
@@ -33,24 +34,39 @@ public:
 class allocator {
 public:
     using address = std::uint8_t *;
+    /// The choice of std::map<> is not significant: the code assumes an ordered key/value
+    /// container.
     using container = std::map<address, std::size_t>;
 
-    using address_size_pair = std::pair<address, std::size_t>;
-    using add_storage_fn = std::function<address_size_pair (std::size_t)>;
+    using add_storage_fn = std::function<std::pair<address, std::size_t> (std::size_t)>;
 
-    explicit allocator (address initial_ptr, std::size_t initial_size, add_storage_fn as);
+    /// \param as  A function with signature compatible with `std::pair<address,
+    /// size_t>(std::size_t)` which will be called if an allocation request cannot be satisfied. It
+    /// is passed the amount of storage requested and should respond by attempting to allocate at
+    /// least much. On success it should return a pair containing the base pointer and the actual
+    /// allocated size.
+    explicit allocator (add_storage_fn as)
+            : allocator (as, std::make_pair (nullptr, 0)) {}
 
-    [[nodiscard]] address allocate (std::size_t size);
+    /// \param init  The address and size of an initial storage allocation.
+    /// \param as  A function with signature compatible with `std::pair<address,
+    /// size_t>(std::size_t)` which will be called if an allocation request cannot be satisfied. It
+    /// is passed the amount of storage requested and should respond by attempting to allocate at
+    /// least much. On success it should return a pair containing the base pointer and the actual
+    /// allocated size.
+    allocator (add_storage_fn as, std::pair<address, std::size_t> const & init);
+
+    address allocate (std::size_t size);
     void free (address offset);
-    [[nodiscard]] address realloc (address ptr, std::size_t new_size);
+    address realloc (address ptr, std::size_t new_size);
 
     bool check () const;
     void dump (std::ostream & os);
 
-    [[nodiscard]] std::size_t num_allocs () const noexcept { return allocs_.size (); }
-    [[nodiscard]] std::size_t num_frees () const noexcept { return frees_.size (); }
-    [[nodiscard]] std::size_t allocated_space () const noexcept;
-    [[nodiscard]] std::size_t free_space () const noexcept;
+    std::size_t num_allocs () const noexcept { return allocs_.size (); }
+    std::size_t num_frees () const noexcept { return frees_.size (); }
+    std::size_t allocated_space () const noexcept;
+    std::size_t free_space () const noexcept;
 
     container::const_iterator allocs_begin () { return allocs_.begin (); }
     container::const_iterator allocs_end () { return allocs_.end (); }
@@ -60,12 +76,9 @@ public:
     std::ostream & save (std::ostream & os, std::uint8_t const * base = nullptr);
     void load (std::istream & is, std::uint8_t * base = nullptr);
 
-    using memory_map = std::map<address, std::tuple<std::size_t, bool>>;
 
 private:
     add_storage_fn add_storage_;
-
-    // An ordered key/value container.
 
     static address allocation_end (container::value_type const & p) noexcept {
         return p.first + p.second;

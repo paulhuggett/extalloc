@@ -229,9 +229,9 @@ namespace {
         }
 
         auto backing_ptr = memory_map (fd, mapped_size);
-        allocator alloc{backing_ptr.get (), mapped_size, [](std::size_t size) {
-                            return std::pair<std::uint8_t *, std::size_t> (nullptr, 0);
-                        }};
+        allocator alloc{
+            [](std::size_t size) { return std::pair<std::uint8_t *, std::size_t> (nullptr, 0); },
+            std::make_pair (backing_ptr.get (), mapped_size)};
 
         if (file_is_available (alloc_persist)) {
             std::ifstream file (alloc_persist, std::ios::binary);

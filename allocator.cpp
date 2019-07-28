@@ -23,11 +23,11 @@ no_allocation::~no_allocation () noexcept = default;
 //*                                     *
 // ctor
 // ~~~~
-allocator::allocator (address initial_ptr, std::size_t initial_size, add_storage_fn as)
+allocator::allocator (add_storage_fn as, std::pair<address, std::size_t> const & init)
         : add_storage_{as} {
 
-    if (initial_ptr != nullptr && initial_size > 0) {
-        frees_.emplace (initial_ptr, initial_size);
+    if (init.first != nullptr && init.second > 0) {
+        frees_.emplace (init);
     }
 }
 
@@ -39,7 +39,11 @@ auto allocator::allocate (std::size_t size) -> address {
 
     if (frees_.empty ()) {
         // No free space at all: allocate more.
-        frees_.insert (add_storage_ (size));
+        std::pair<address, std::size_t> const storage = add_storage_ (size);
+        if (std::get<0> (storage) == nullptr || std::get<1> (storage) < size) {
+            return nullptr;
+        }
+        frees_.insert (storage);
     }
 
     auto const end = std::end (frees_);
@@ -49,7 +53,12 @@ auto allocator::allocate (std::size_t size) -> address {
     if (pos == end) {
         // No free space large enough: allocate more.
         bool inserted = false;
-        std::tie (pos, inserted) = frees_.insert (add_storage_ (size));
+        std::pair<address, std::size_t> const storage = add_storage_ (size);
+        if (std::get<0> (storage) == nullptr || std::get<1> (storage) < size) {
+            return nullptr;
+        }
+
+        std::tie (pos, inserted) = frees_.insert (storage);
     }
 
     // There's a free block with sufficient space.
@@ -68,7 +77,7 @@ auto allocator::allocate (std::size_t size) -> address {
 
 // realloc
 // ~~~~~~~
-[[nodiscard]] auto allocator::realloc (address ptr, std::size_t new_size) -> address {
+auto allocator::realloc (address ptr, std::size_t new_size) -> address {
     new_size = std::max (new_size, std::size_t{1});
 
     auto const pos = allocs_.find (ptr);
@@ -179,6 +188,8 @@ void allocator::free (address offset) {
 // dump
 // ~~~~
 void allocator::dump (std::ostream & os) {
+    using memory_map = std::map<address, std::tuple<std::size_t, bool>>;
+
     auto merge = [](memory_map && m, container const & c, bool is_used) -> memory_map {
         memory_map result = std::move (m);
         for (auto const & kvp : c) {
