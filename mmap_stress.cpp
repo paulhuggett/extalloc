@@ -16,15 +16,6 @@
 
 namespace {
 
-    constexpr auto alloc_persist = "./map.alloc";
-    constexpr auto store_persist = "./store.alloc";
-    constexpr auto blocks_persist = "./blocks.alloc";
-
-    constexpr auto mapped_size = std::size_t{1024} * std::size_t{1024};
-
-    constexpr auto num_passes = 16U;
-    constexpr auto max_allocation_size = std::size_t{256};
-    constexpr auto num_allocations = mapped_size / max_allocation_size;
 
 
 
@@ -220,6 +211,17 @@ namespace {
     }
 
     void mmap_stress () {
+        constexpr auto alloc_persist = "./map.alloc";
+        constexpr auto store_persist = "./store.alloc";
+        constexpr auto blocks_persist = "./blocks.alloc";
+
+        constexpr auto mapped_size = std::size_t{1024} * std::size_t{1024};
+        constexpr auto num_passes = 16U;
+        constexpr auto max_allocation_size = std::size_t{256};
+        constexpr auto num_allocations = mapped_size / max_allocation_size;
+
+
+
         int fd = open (store_persist, O_RDWR | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
         if (fd == -1) {
             throw std::error_code (errno, std::system_category ());
@@ -229,9 +231,10 @@ namespace {
         }
 
         auto backing_ptr = memory_map (fd, mapped_size);
-        allocator alloc{
-            [](std::size_t size) { return std::pair<std::uint8_t *, std::size_t> (nullptr, 0); },
-            std::make_pair (backing_ptr.get (), mapped_size)};
+        allocator alloc{[](std::size_t /*size*/) {
+                            return std::pair<std::uint8_t *, std::size_t> (nullptr, 0);
+                        },
+                        std::make_pair (backing_ptr.get (), mapped_size)};
 
         if (file_is_available (alloc_persist)) {
             std::ifstream file (alloc_persist, std::ios::binary);
@@ -247,6 +250,7 @@ namespace {
                 throw bad_memory ();
             }
         }
+
 
         std::cout << "On start: " << alloc.allocated_space () << " allocated bytes ("
                   << alloc.num_allocs () << " allocations), " << alloc.free_space ()
