@@ -158,7 +158,7 @@ namespace {
     public:
         explicit deleter (std::size_t mapped_size) noexcept
                 : mapped_size_{mapped_size} {}
-        void operator() (void * p) const { munmap (p, mapped_size_); }
+        void operator() (std::uint8_t * p) const { munmap (p, mapped_size_); }
 
     private:
         std::size_t mapped_size_;
@@ -166,12 +166,13 @@ namespace {
 
 
     std::unique_ptr<std::uint8_t, deleter> memory_map (int fd, std::size_t mapped_size) {
-        auto mptr = mmap (nullptr, mapped_size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd,
-                          off_t{0} /*offset*/);
+        auto mptr =
+            static_cast<std::uint8_t *> (mmap (nullptr, mapped_size, PROT_READ | PROT_WRITE,
+                                               MAP_FILE | MAP_SHARED, fd, off_t{0} /*offset*/));
         if (mptr == MAP_FAILED) {
             throw std::system_error{errno, std::generic_category ()};
         }
-        return {reinterpret_cast<std::uint8_t *> (mptr), deleter{mapped_size}};
+        return {mptr, deleter{mapped_size}};
     }
 
 
