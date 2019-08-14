@@ -23,7 +23,7 @@ no_allocation::~no_allocation () noexcept = default;
 //*                                     *
 // ctor
 // ~~~~
-allocator::allocator (add_storage_fn as, std::pair<address, std::size_t> const & init)
+allocator::allocator (add_storage_fn const & as, std::pair<address, std::size_t> const & init)
         : add_storage_{as} {
 
     if (init.first != nullptr && init.second > 0) {

@@ -45,7 +45,7 @@ public:
     /// is passed the amount of storage requested and should respond by attempting to allocate at
     /// least much. On success it should return a pair containing the base pointer and the actual
     /// allocated size.
-    explicit allocator (add_storage_fn as)
+    explicit allocator (add_storage_fn const & as)
             : allocator (as, std::make_pair (nullptr, 0)) {}
 
     /// \param init  The address and size of an initial storage allocation.
@@ -54,7 +54,7 @@ public:
     /// is passed the amount of storage requested and should respond by attempting to allocate at
     /// least much. On success it should return a pair containing the base pointer and the actual
     /// allocated size.
-    allocator (add_storage_fn as, std::pair<address, std::size_t> const & init);
+    allocator (add_storage_fn const & as, std::pair<address, std::size_t> const & init);
 
     address allocate (std::size_t size);
     void free (address offset);
