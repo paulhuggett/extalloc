@@ -1,5 +1,7 @@
 # extalloc
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=paulhuggett_extalloc&metric=alert_status)](https://sonarcloud.io/dashboard?id=paulhuggett_extalloc)
+
 ### Table of Contents
 
 * [Introduction](#introduction)
