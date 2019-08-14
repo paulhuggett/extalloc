@@ -30,7 +30,7 @@ namespace {
 
         std::deque<std::tuple<allocator::address, std::size_t, std::uint8_t>> blocks;
 
-        auto const free_n = [&](std::size_t n) {
+        auto const free_n = [&alloc, &blocks](std::size_t n) {
             for (; n > 0; --n) {
                 auto const & [addr, size, v] = blocks.front ();
                 auto const value = v;
