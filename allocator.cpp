@@ -184,13 +184,12 @@ void allocator::free (address offset) {
     allocs_.erase (pos);
 }
 
-
 // dump
 // ~~~~
 void allocator::dump (std::ostream & os) {
     using memory_map = std::map<address, std::tuple<std::size_t, bool>>;
 
-    auto merge = [](memory_map && m, container const & c, bool is_used) -> memory_map {
+    auto merge = [](memory_map && m, container const & c, bool is_used) {
         memory_map result = std::move (m);
         for (auto const & kvp : c) {
             result[kvp.first] = std::make_tuple (kvp.second, is_used);
