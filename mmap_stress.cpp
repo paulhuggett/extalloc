@@ -169,7 +169,7 @@ namespace {
         auto mptr = mmap (nullptr, mapped_size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd,
                           off_t{0} /*offset*/);
         if (mptr == MAP_FAILED) {
-            throw std::error_code (errno, std::generic_category ());
+            throw std::system_error{errno, std::generic_category ()};
         }
         return {reinterpret_cast<std::uint8_t *> (mptr), deleter{mapped_size}};
     }
@@ -181,7 +181,7 @@ namespace {
             return true;
         }
         if (errno != ENOENT) {
-            throw std::error_code (errno, std::system_category ());
+            throw std::system_error{errno, std::generic_category ()};
         }
         return false; // file wasn't found: that's fine.
     }
@@ -224,10 +224,10 @@ namespace {
 
         int fd = open (store_persist, O_RDWR | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
         if (fd == -1) {
-            throw std::error_code (errno, std::system_category ());
+            throw std::system_error{errno, std::generic_category ()};
         }
         if (ftruncate (fd, mapped_size) != 0) {
-            throw std::error_code (errno, std::system_category ());
+            throw std::system_error{errno, std::generic_category ()};
         }
 
         auto backing_ptr = memory_map (fd, mapped_size);
