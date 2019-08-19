@@ -198,12 +198,13 @@ void allocator::dump (std::ostream & os) {
     };
 
     memory_map const map = merge (merge (memory_map{}, allocs_, true), frees_, false);
+
     os << std::boolalpha;
-    auto const emit = [&os](std::pair<address, std::tuple<std::size_t, bool>> const & v) {
-        auto const first = reinterpret_cast<std::uintptr_t> (v.first);
-        os << first << ',' << std::get<0> (v.second) << ',' << std::get<1> (v.second) << '\n';
-    };
-    std::for_each (std::begin (map), std::end (map), emit);
+    std::for_each (std::begin (map), std::end (map),
+                   [&os](std::pair<address, std::tuple<std::size_t, bool>> const & v) {
+                       os << reinterpret_cast<std::uintptr_t> (v.first) << ','
+                          << std::get<0> (v.second) << ',' << std::get<1> (v.second) << '\n';
+                   });
 }
 
 // accumulate_values [static]
