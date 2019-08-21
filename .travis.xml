@@ -4,3 +4,9 @@ os:
 compiler:
 - clang
 - gcc
+script:
+- mkdir build
+- cd build
+- cmake ..
+- cd ..
+- cmake --build build
