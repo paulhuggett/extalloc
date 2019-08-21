@@ -30,7 +30,7 @@ This tool makes the both the stored data and the allocator’s metadata persiste
 File Name        | Description
 ---------------- | -------------
 `./blocks.alloc` | This holds the `mmap_stress` tool’s own data. This tracks its state: the list of active allocations, their size, and the value with which they have each been filled.
-`./map.alloc`.   | Records the allocator’s metadata .
+`./map.alloc`    | Records the allocator’s metadata.
 `./store.alloc`  | The stored data. This is a 1 MiB memory-mapped block which is created as the program begins.
 
 It stresses the allocator in the same manner as `mem_stress` above: 
