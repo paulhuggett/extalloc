@@ -1,5 +1,7 @@
 #include "optional.hpp"
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 namespace {
@@ -8,15 +10,15 @@ namespace {
     public:
         explicit value (int v)
                 : v_{new int(v)} {}
-        value (value const & v)
-                : v_{new int(v.get ())} {}
+        value (value const & other)
+                : v_{new int(other.get ())} {}
+        value (value && other) noexcept
+                : v_{std::move (other.v_)} {}
 
-        value & operator= (value const & rhs) {
-            if (&rhs != this) {
-                v_.reset (new int(rhs.get ()));
-            }
-            return *this;
-        }
+        ~value () noexcept = default;
+
+        value & operator= (value const & other);
+        value & operator= (value && other) noexcept;
 
         bool operator== (value const & rhs) const { return this->get () == rhs.get (); }
 
@@ -25,6 +27,19 @@ namespace {
     private:
         std::unique_ptr<int> v_;
     };
+
+    value & value::operator= (value const & other) {
+        if (&other != this) {
+            v_.reset (new int(other.get ()));
+        }
+        return *this;
+    }
+    value & value::operator= (value && other) noexcept {
+        if (&other != this) {
+            v_ = std::move (other.v_);
+        }
+        return *this;
+    }
 
 } // end anonymous namespace
 
