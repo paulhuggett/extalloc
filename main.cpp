@@ -39,7 +39,7 @@ namespace {
 
                 auto const value = v;
                 auto end = addr + size;
-                if (std::find_if (addr, end, [value](std::uint8_t v) { return v != value; }) !=
+                if (std::find_if (addr, end, [value](std::uint8_t x) { return x != value; }) !=
                     end) {
                     throw bad_memory ();
                 }
