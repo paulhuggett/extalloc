@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 3.10)
 project (extalloc CXX)
 
+option (COVERAGE_ENABLED "Code-coverage is enabled" No)
+
 function (configure_target name)
 
     set_target_properties (${name} PROPERTIES
@@ -10,8 +12,19 @@ function (configure_target name)
     
     if (MSVC)
         target_compile_options (${name} PRIVATE /W4)
+
+        if (COVERAGE_ENABLED)
+            message (WARNING "COVERAGE_ENABLED is not yet implemented for MSVC")
+        endif (COVERAGE_ENABLED)
+
     elseif (CMAKE_COMPILER_IS_GNUCXX)
         target_compile_options (${name} PRIVATE -Wall -pedantic)
+
+        if (COVERAGE_ENABLED)
+            target_compile_options (${name} PRIVATE -fprofile-arcs -ftest-coverage)
+            target_link_libraries (${name} PUBLIC --coverage)
+        endif (COVERAGE_ENABLED)
+
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         target_compile_options (${name} PRIVATE
             -Weverything
@@ -19,11 +32,18 @@ function (configure_target name)
             -Wno-c++98-compat-pedantic
             -Wno-padded
         )
+
+        if (COVERAGE_ENABLED)
+            target_compile_options (${name} PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+            target_compile_options (${name} PRIVATE -fno-inline-functions)
+            target_link_libraries (${name} PUBLIC -fprofile-instr-generate -fcoverage-mapping)
+        endif (COVERAGE_ENABLED)
+
     else ()
         message (STATUS "Unknown compiler")
     endif ()
 
-endfunction ()
+endfunction (configure_target)
 
 
 ############
