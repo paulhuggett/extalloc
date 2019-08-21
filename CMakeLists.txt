@@ -68,7 +68,10 @@ add_subdirectory (googletest)
 # unit-tests #
 ##############
 
-add_executable (unit-tests unit-tests.cpp)
+add_executable (unit-tests
+    unit-tests.cpp
+    test_optional.cpp
+)
 configure_target (unit-tests)
 target_link_libraries (unit-tests PRIVATE
     extalloc
