@@ -79,7 +79,7 @@ public:
     container::const_iterator frees_begin () { return frees_.begin (); }
     container::const_iterator freed_end () { return frees_.end (); }
 
-    std::ostream & save (std::ostream & os, std::uint8_t const * base = nullptr);
+    std::ostream & save (std::ostream & os, std::uint8_t const * base = nullptr) const;
     void load (std::istream & is, std::uint8_t * base = nullptr);
 
 

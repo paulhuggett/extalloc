@@ -257,7 +257,7 @@ bool allocator::check () const {
 
 // save
 // ~~~~
-std::ostream & allocator::save (std::ostream & os, std::uint8_t const * base) {
+std::ostream & allocator::save (std::ostream & os, std::uint8_t const * base) const {
     auto const write_map = [&os, base](container const & map) {
         write (os, map.size ());
         for (auto const & kvp : map) {

@@ -217,6 +217,16 @@ namespace {
         }
     }
 
+    void save_blocks (char const * file_path, blocks_type const & blocks, std::uint8_t * base) {
+        std::ofstream file{file_path, std::ios::binary | std::ios::trunc};
+        save_blocks (file, blocks, base);
+    }
+
+    void save_allocs (char const * file_path, allocator const & alloc, std::uint8_t * base) {
+        std::ofstream allocs_file{file_path, std::ios::binary | std::ios::trunc};
+        alloc.save (allocs_file, base);
+    }
+
     void mmap_stress () {
         constexpr auto alloc_persist = "./map.alloc";
         constexpr auto store_persist = "./store.alloc";
@@ -283,14 +293,8 @@ namespace {
             }
         }
 
-        {
-            std::ofstream allocs_file (alloc_persist, std::ios::binary | std::ios::trunc);
-            alloc.save (allocs_file, backing_ptr.get ());
-        }
-        {
-            std::ofstream file (blocks_persist, std::ios::binary | std::ios::trunc);
-            save_blocks (file, blocks, backing_ptr.get ());
-        }
+        save_allocs (alloc_persist, alloc, backing_ptr.get ());
+        save_blocks (blocks_persist, blocks, backing_ptr.get ());
     }
 
 } // end anonymous namespace
