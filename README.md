@@ -1,6 +1,6 @@
 # extalloc
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=paulhuggett_extalloc&metric=alert_status)](https://sonarcloud.io/dashboard?id=paulhuggett_extalloc)
+[![Linux and macOS Build Status](https://api.travis-ci.com/paulhuggett/extalloc.svg?branch=master)](https://travis-ci.com/paulhuggett/extalloc) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=paulhuggett_extalloc&metric=alert_status)](https://sonarcloud.io/dashboard?id=paulhuggett_extalloc)
 
 ### Table of Contents
 
