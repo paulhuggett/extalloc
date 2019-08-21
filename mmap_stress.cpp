@@ -8,16 +8,17 @@
 #include <system_error>
 
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/mman.h>
+#ifdef _WIN32
+#    include <io.h>
+#else
+#    include <unistd.h>
+#    include <sys/mman.h>
+#endif
 #include <sys/stat.h>
 
 #include "allocator.hpp"
 
 namespace {
-
-
-
 
     class bad_memory : public std::runtime_error {
     public:
@@ -29,9 +30,9 @@ namespace {
 
     bool block_content_okay (blocks_type::value_type const & vt) {
         auto const addr = vt.first;
-        auto const & [size, v] = vt.second;
-        auto const value = v;
-        auto end = addr + size;
+        std::pair<std::size_t, std::uint8_t> const & second = vt.second;
+        auto const end = addr + std::get<0> (second);
+        auto const value = std::get<1> (second);
         return std::find_if (addr, end, [value](std::uint8_t v) { return v != value; }) == end;
     }
 
@@ -158,12 +159,17 @@ namespace {
     public:
         explicit deleter (std::size_t mapped_size) noexcept
                 : mapped_size_{mapped_size} {}
-        void operator() (std::uint8_t * p) const { munmap (p, mapped_size_); }
+        void operator() (std::uint8_t * p) const;
 
     private:
         std::size_t mapped_size_;
     };
 
+    void deleter::operator() (std::uint8_t * p) const {
+        if (p != nullptr) {
+            munmap (p, mapped_size_);
+        }
+    }
 
     std::unique_ptr<std::uint8_t, deleter> memory_map (int fd, std::size_t mapped_size) {
         auto mptr =

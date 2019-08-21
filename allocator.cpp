@@ -3,8 +3,9 @@
 #include <algorithm>
 #include <cassert>
 #include <numeric>
-#include <optional>
 #include <type_traits>
+
+#include "optional.hpp"
 
 
 //*                  _ _              _   _           *
@@ -142,8 +143,8 @@ void allocator::free (address offset) {
         throw no_allocation ();
     }
 
-    std::optional<container::iterator> prev;
-    std::optional<container::iterator> next;
+    optional<container::iterator> prev;
+    optional<container::iterator> next;
 
     // lower_bound() returns an iterator pointing to the first element that's not less than offset.
     auto lb = frees_.lower_bound (offset);

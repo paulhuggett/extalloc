@@ -16,9 +16,12 @@ namespace {
         allocator alloc_;
     };
 
+    constexpr std::size_t Allocator::buffer_size;
+
     Allocator::Allocator ()
             : alloc_{[this](std::size_t size) {
-                         auto & buffer = buffers_.emplace_back (std::max (size, buffer_size));
+                         buffers_.emplace_back (std::max (size, buffer_size));
+                         auto & buffer = buffers_.back ();
                          return std::pair<uint8_t *, size_t>{buffer.data (), buffer.size ()};
                      },
                      std::make_pair (nullptr, std::size_t{0})} {}

@@ -22,8 +22,8 @@ namespace {
         std::list<std::vector<std::uint8_t>> buffers;
 
         allocator alloc{[&buffers, storage_block_size](std::size_t size) {
-                            auto & buffer =
-                                buffers.emplace_back (std::max (size, storage_block_size));
+                            buffers.emplace_back (std::max (size, storage_block_size));
+                            auto & buffer = buffers.back ();
                             return std::pair<uint8_t *, size_t>{buffer.data (), buffer.size ()};
                         },
                         std::make_pair (nullptr, std::size_t{0})};
@@ -32,7 +32,11 @@ namespace {
 
         auto const free_n = [&alloc, &blocks](std::size_t n) {
             for (; n > 0; --n) {
-                auto const & [addr, size, v] = blocks.front ();
+                auto const & front = blocks.front ();
+                allocator::address const addr = std::get<0> (front);
+                std::size_t const size = std::get<1> (front);
+                std::uint8_t const v = std::get<2> (front);
+
                 auto const value = v;
                 auto end = addr + size;
                 if (std::find_if (addr, end, [value](std::uint8_t v) { return v != value; }) !=

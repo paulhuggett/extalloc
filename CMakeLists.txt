@@ -4,7 +4,7 @@ project (extalloc CXX)
 function (configure_target name)
 
     set_target_properties (${name} PROPERTIES
-        CXX_STANDARD 17
+        CXX_STANDARD 11
         CXX_EXTENSIONS OFF
     )
     
@@ -30,7 +30,7 @@ endfunction ()
 # extalloc #
 ############
 
-add_library (extalloc STATIC allocator.cpp allocator.hpp)
+add_library (extalloc STATIC allocator.cpp allocator.hpp optional.hpp)
 configure_target (extalloc)
 
 

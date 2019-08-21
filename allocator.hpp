@@ -1,5 +1,5 @@
-#ifndef ALLOCATOR_HPP
-#define ALLOCATOR_HPP
+#ifndef EXTALLOC_ALLOCATOR_HPP
+#define EXTALLOC_ALLOCATOR_HPP
 
 #include <cstdint>
 #include <cstdlib>
@@ -27,7 +27,13 @@ inline T read (std::istream & is) {
 class no_allocation : public std::runtime_error {
 public:
     no_allocation ();
+    no_allocation (no_allocation const &) = default;
+    no_allocation (no_allocation &&) noexcept = default;
+
     ~no_allocation () noexcept override;
+
+    no_allocation & operator= (no_allocation const &) = default;
+    no_allocation & operator= (no_allocation &&) noexcept = default;
 };
 
 
@@ -91,4 +97,4 @@ private:
     container frees_;
 };
 
-#endif // ALLOCATOR_HPP
+#endif // EXTALLOC_ALLOCATOR_HPP
