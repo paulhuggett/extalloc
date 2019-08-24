@@ -4,6 +4,8 @@
 #include <list>
 #include <vector>
 
+using namespace extalloc;
+
 namespace {
 
     class Allocator : public ::testing::Test {

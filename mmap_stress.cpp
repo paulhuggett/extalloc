@@ -18,6 +18,8 @@
 
 #include "allocator.hpp"
 
+using namespace extalloc;
+
 namespace {
 
     class bad_memory : public std::runtime_error {

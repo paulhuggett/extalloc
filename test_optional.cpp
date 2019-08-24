@@ -4,6 +4,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace extalloc;
+
 namespace {
 
     class value {

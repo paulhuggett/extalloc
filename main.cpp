@@ -9,11 +9,13 @@
 
 #include "allocator.hpp"
 
+using namespace extalloc;
+
 namespace {
 
     class bad_memory : public std::runtime_error {
     public:
-        explicit bad_memory ()
+        bad_memory ()
                 : std::runtime_error{"bad allocation contents"} {}
     };
 
