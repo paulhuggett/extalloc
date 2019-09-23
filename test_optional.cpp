@@ -14,13 +14,12 @@ namespace {
                 : v_{new int(v)} {}
         value (value const & other)
                 : v_{new int(other.get ())} {}
-        value (value && other) noexcept
-                : v_{std::move (other.v_)} {}
+        value (value && other) noexcept = default;
 
         ~value () noexcept = default;
 
-        value & operator= (value const & other);
-        value & operator= (value && other) noexcept;
+        value & operator= (value const & other) = default;
+        value & operator= (value && other) noexcept = default;
 
         bool operator== (value const & rhs) const { return this->get () == rhs.get (); }
 
@@ -30,18 +29,6 @@ namespace {
         std::unique_ptr<int> v_;
     };
 
-    value & value::operator= (value const & other) {
-        if (&other != this) {
-            v_.reset (new int(other.get ()));
-        }
-        return *this;
-    }
-    value & value::operator= (value && other) noexcept {
-        if (&other != this) {
-            v_ = std::move (other.v_);
-        }
-        return *this;
-    }
 
 } // end anonymous namespace
 
