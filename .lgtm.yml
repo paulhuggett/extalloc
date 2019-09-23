@@ -1,2 +1,2 @@
 path_classifiers:
-    exclude: 3rd_party
+    exclude: googletest
