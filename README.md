@@ -5,10 +5,10 @@
 
 ### Table of Contents
 
-* [Introduction](#introduction)
-* [Tools](#tools)
-  * [mem\_stress](#mem_stress)
-  * [mmap\_stress](#mmap_stress)
+*   [Introduction](#introduction)
+*   [Tools](#tools)
+    *   [mem\_stress](#mem_stress)
+    *   [mmap\_stress](#mmap_stress)
 
 
 # Introduction
@@ -36,8 +36,8 @@ File Name        | Description
 
 It stresses the allocator in the same manner as `mem_stress` above: 
 
-- It allocates a random number of blocks of random size and fills each with a random value.
-- It frees a random selection of the allocated blocks.
+-   It allocates a random number of blocks of random size and fills each with a random value.
+-   It frees a random selection of the allocated blocks.
 
 These steps are repeated many times. Next it randomly changes the size of a number of the allocated blocks. Finally, a random number of blocks are freed and the state saved to disk. At each step, the contents of the blocks are checked against the tools expectations.
 
