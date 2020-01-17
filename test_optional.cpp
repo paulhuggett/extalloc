@@ -12,13 +12,11 @@ namespace {
     public:
         explicit value (int v)
                 : v_{new int(v)} {}
-        value (value const & other)
-                : v_{new int(other.get ())} {}
-        value (value && other) noexcept = default;
-
         ~value () noexcept = default;
 
-        value & operator= (value const & other) = default;
+        value (value const & other);
+        value (value && other) noexcept = default;
+        value & operator= (value const & other);
         value & operator= (value && other) noexcept = default;
 
         bool operator== (value const & rhs) const { return this->get () == rhs.get (); }
@@ -29,6 +27,15 @@ namespace {
         std::unique_ptr<int> v_;
     };
 
+    value::value (value const & other)
+            : v_{new int (other.get ())} {}
+
+    value & value::operator= (value const & other) {
+        if (this != &other) {
+            v_.reset (new int (other.get ()));
+        }
+        return *this;
+    }
 
 } // end anonymous namespace
 
@@ -62,6 +69,9 @@ TEST (Optional, ValueOr) {
     EXPECT_EQ (m1.value_or (value{37}), value{37});
 
     optional<value> m2 (5);
+    EXPECT_EQ (m2.value_or (value{37}), value{5});
+
+    optional<value> m3 (7);
     EXPECT_EQ (m2.value_or (value{37}), value{5});
 }
 
