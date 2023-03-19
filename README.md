@@ -3,7 +3,6 @@
 ![GitHub](https://img.shields.io/github/license/paulhuggett/extalloc)
 [![Linux and macOS Build Status](https://api.travis-ci.com/paulhuggett/extalloc.svg?branch=master)](https://travis-ci.com/paulhuggett/extalloc)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=paulhuggett_extalloc&metric=alert_status)](https://sonarcloud.io/dashboard?id=paulhuggett_extalloc)
-[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/paulhuggett/extalloc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/paulhuggett/extalloc/context:cpp)
 
 ## Table of Contents
 
